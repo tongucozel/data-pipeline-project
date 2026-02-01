@@ -30,13 +30,26 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=3600)
 def fetch_stock_data(symbol: str, period: str) -> pd.DataFrame:
     """Fetch stock data from Yahoo Finance."""
-    ticker = yf.Ticker(symbol)
-    df = ticker.history(period=period)
-    df = df.reset_index()
-    return df
+    import time
+    max_retries = 3
+
+    for attempt in range(max_retries):
+        try:
+            ticker = yf.Ticker(symbol)
+            df = ticker.history(period=period)
+            if df.empty:
+                return None
+            df = df.reset_index()
+            return df
+        except Exception as e:
+            if attempt < max_retries - 1:
+                time.sleep(2 ** attempt)
+                continue
+            return None
+    return None
 
 
 def calculate_metrics(df: pd.DataFrame) -> dict:
@@ -166,6 +179,11 @@ def main():
     # Fetch data
     with st.spinner("Fetching data..."):
         df = fetch_stock_data(symbol, period)
+
+        if df is None or df.empty:
+            st.error("Unable to fetch data. Yahoo Finance may be rate limiting requests. Please try again in a few minutes.")
+            st.stop()
+
         df = add_technical_indicators(df)
         metrics = calculate_metrics(df)
 
