@@ -5,6 +5,7 @@ Interactive dashboard for stock data analysis.
 """
 
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 import pandas as pd
 import yfinance as yf
 import plotly.graph_objects as go
@@ -30,7 +31,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=30)
 def fetch_stock_data(symbol: str, period: str) -> pd.DataFrame:
     """Fetch stock data from Yahoo Finance."""
     import time
@@ -137,6 +138,9 @@ def create_price_chart(df: pd.DataFrame, symbol: str) -> go.Figure:
 
 
 def main():
+    # Auto-refresh every 30 seconds
+    st_autorefresh(interval=30000, limit=None, key="data_refresh")
+
     # Header
     st.title("Financial Data Pipeline")
     st.markdown("ETL pipeline for stock market data analysis")
@@ -258,7 +262,7 @@ def main():
 
     # Footer
     st.markdown("---")
-    st.caption(f"Data fetched at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | Source: Yahoo Finance")
+    st.caption(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | Auto-refresh: 30s | Source: Yahoo Finance")
 
 
 if __name__ == "__main__":
